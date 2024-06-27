@@ -1,0 +1,13 @@
+
+# Setup on server
+### Pull image
+```sudo docker pull duy1009/insightface_jetson:1.0```
+
+### Start
+```sudo docker run -p 8000:8000 -it insightface_jetson /bin/bash```
+
+### Run
+```uvicorn main:app --host 0.0.0.0  --port 8000 --reload```
+
+# Test
+```python3 src/test_request.py```
