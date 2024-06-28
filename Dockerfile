@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM  python:3.8
 WORKDIR /usr/src/app
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 COPY ./src/requirements.txt ./
