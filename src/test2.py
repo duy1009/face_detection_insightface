@@ -1,12 +1,12 @@
 import cv2, time
 import numpy as np
 from math import atan, pi
-# from insightface.app import FaceAnalysis
-from face_analysis_override import FaceAnalysisOverride as FaceAnalysis
-from insightface.data import get_image as ins_get_image
+from scrfd import SCRFD_INFERENCE, Face
 
-app = FaceAnalysis(model_path="src/weights/det_10g.onnx", root = "", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-app.prepare(ctx_id=0, det_size=(320, 320))
+# app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx", root = "", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx")
+
+app.prepare(ctx_id=0, input_size=(640, 640))
 vid = cv2.VideoCapture("src/IMG_5272.MOV")
 
 pre = time.time()
@@ -37,6 +37,21 @@ def cropFaces(image_raw, pred):
         bbox = res["bbox"]
         face_imgs.append(cropFace(image_raw, bbox))
     return face_imgs
+def postprocess(pred):
+    bboxes, kpss = pred
+    if bboxes.shape[0] == 0:
+        return []
+    ret = []
+    for i in range(bboxes.shape[0]):
+        bbox = bboxes[i, 0:4]
+        det_score = bboxes[i, 4]
+        kps = None
+        if kpss is not None:
+            kps = kpss[i]
+        face = Face(bbox=bbox, kps=kps, det_score=det_score)
+        ret.append(face)
+    return ret
+            
 
 while True:
     now = time.time()
@@ -47,7 +62,8 @@ while True:
     r, img = vid.read()
     if not r:
         break
-    faces = app.get(img)
+    pred = app.detect(img)
+    faces = postprocess(pred)
     faces = filter(faces)
     if faces is not None:
         imgs_f = cropFaces(img, faces)
