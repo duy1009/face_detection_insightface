@@ -11,3 +11,6 @@
 
 # Test
 ```python3 src/test_request.py```
+
+# Build images for Jetson nano
+```sudo docker build --platform="linux/arm64/v8" --progress=plain -t duy1009/insightface_jetson:1.0 .```
