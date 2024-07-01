@@ -2,7 +2,7 @@ import cv2, time
 import numpy as np
 from math import atan, pi
 # from insightface.app import FaceAnalysis
-from face_analysis_override import FaceAnalysisOverride as FaceAnalysis
+from old_code.face_analysis_override import FaceAnalysisOverride as FaceAnalysis
 from insightface.data import get_image as ins_get_image
 
 app = FaceAnalysis(model_path="src/weights/det_10g.onnx", root = "", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])

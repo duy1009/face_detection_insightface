@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
-from face_analysis_override import FaceAnalysisOverride as FaceAnalysis
+from old_code.face_analysis_override import FaceAnalysisOverride as FaceAnalysis
 from PIL import Image
 import numpy as np
 import os
