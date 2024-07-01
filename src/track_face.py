@@ -1,17 +1,14 @@
-import cv2, time
+import cv2, time, os
 import numpy as np
 from math import atan, pi
 from scrfd import SCRFD_INFERENCE, Face
 from tracker import CentroidTracker
 # app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx", root = "", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx")
+from _process import count_angle, alignface
+from logger import LogText
 
-app.prepare(ctx_id=0, input_size=(640, 640))
-vid = cv2.VideoCapture("src/IMG_5272.MOV")
-track = CentroidTracker(50)
-pre = time.time()
-fcnt=0
-FPS = 0
+SAVE_DIR = "result" 
+
 def filter(pred, conf = 0.5, angle=180):
     res = []
     for i in pred:
@@ -20,6 +17,7 @@ def filter(pred, conf = 0.5, angle=180):
         if ang < angle and i["det_score"]> conf :
             res.append(i)
     return res
+
 def convertPred2Json(pred):
     if len(pred)<=0:
         return None
@@ -36,13 +34,11 @@ def convertPred2Json(pred):
         "det_score": confs.tolist(),
         "kps": landmarks.tolist()
     }
-def count_angle(landmark):
-    a = landmark[2][1] - (landmark[0][1] + landmark[1][1]) / 2
-    b = landmark[2][0] - (landmark[0][0] + landmark[1][0]) / 2
-    angle = atan(abs(b) / a) * 180.0 / pi
-    return angle
+
 def cropFace(image_raw, bbox):
-    x1, y1, x2, y2 = bbox.astype("int32")
+    bbox = bbox.astype("int32")
+    bbox[bbox<0] = 0
+    x1, y1, x2, y2 = bbox
     img_f = image_raw[y1:y2, x1:x2]
     return img_f
 
@@ -52,6 +48,7 @@ def cropFaces(image_raw, pred):
         bbox = res["bbox"]
         face_imgs.append(cropFace(image_raw, bbox))
     return face_imgs
+
 def postprocess(pred):
     bboxes, kpss = pred
     if bboxes.shape[0] == 0:
@@ -91,18 +88,40 @@ def draw(img, id, bb):
         cv2.putText(dimg, f"ID:{id[i]}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 150, 255), 1)
     return dimg    
 
+
+
+
+app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx")
+
+app.prepare(ctx_id=0, input_size=(640, 640))
+vid = cv2.VideoCapture("src/IMG_5272.MOV")
+track = CentroidTracker(50)
+
+logg = LogText("result.csv", 
+               ["Size_w", "Size_h", "Confident", "Time_e2e(s)", "Angle(degree)", "Path"])
+
+try: 
+    os.makedirs(SAVE_DIR)
+    os.makedirs(os.path.join(SAVE_DIR, "images"))
+except:
+    pass
+
+pre = time.time()
+fcnt= 0
+fps = 0
+cnt = 0
 while True:
     now = time.time()
     if now-pre>1:
         pre +=1
-        FPS = fcnt
+        fps = fcnt
         fcnt=0
     r, rimg = vid.read()
     if not r:
         break
     pred = app.detect(rimg)
-    faces = postprocess(pred)
-    faces = filter(faces)
+    faces_r = postprocess(pred)
+    faces = filter(faces_r)
     if len(faces)>0:
         json_pred = convertPred2Json(faces)
         bbox = json_pred["bbox"]
@@ -110,10 +129,30 @@ while True:
         res = track.update(bbox)
         bbres = findbbox(list(res.values()), bbox)
         imgs_f = cropFaces(rimg, faces)
+        for img_f, face in zip(imgs_f, faces):
+            lmk = face["kps"].copy()
+            lmk[:,0]-= face["bbox"][0]
+            lmk[:,1]-= face["bbox"][1]
+            img_aligned = alignface(img_f, lmk)
+
+            save_path = os.path.join(SAVE_DIR, "images", f"face_{cnt}.png")
+            cv2.imwrite(save_path, img_aligned)
+            angle = count_angle(lmk)
+            proc_time = time.time()-now
+            logg.update([img_f.shape[1],
+                         img_f.shape[0],
+                         face["det_score"],
+                         proc_time,
+                         angle,
+                         save_path
+                         ])
+            cnt+=1
+            
         img_show = app.draw_on(rimg, faces)
         img_show = draw(img_show, list(res.keys()), bbres)
+    logg.save()
     fcnt+=1
-    cv2.putText(img_show, f"FPS: {FPS}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)
+    cv2.putText(img_show, f"FPS: {fps}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)
     cv2.imshow("Faces detection", img_show)
     if cv2.waitKey(1) == ord("q"):
         break
