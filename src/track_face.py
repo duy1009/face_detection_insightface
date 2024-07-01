@@ -8,6 +8,9 @@ from _process import count_angle, alignface
 from logger import LogCSV
 
 SAVE_DIR = "result" 
+MODEL_PATH = "src/weights/det_10g.onnx"
+SRC = "src/IMG_5272.MOV"
+INPUT_SIZE = (640, 640)
 
 def filter(pred, conf = 0.5, angle=180):
     res = []
@@ -88,13 +91,9 @@ def draw(img, id, bb):
         cv2.putText(dimg, f"ID:{id[i]}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 150, 255), 1)
     return dimg    
 
-
-
-
-app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx")
-
-app.prepare(ctx_id=0, input_size=(640, 640))
-vid = cv2.VideoCapture("src/IMG_5272.MOV")
+app = SCRFD_INFERENCE(model_path=MODEL_PATH)
+app.prepare(ctx_id=0, input_size=INPUT_SIZE)
+vid = cv2.VideoCapture(SRC)
 track = CentroidTracker(50)
 
 logg = LogCSV(os.path.join(SAVE_DIR, "result.csv"), 
