@@ -5,7 +5,7 @@ from scrfd import SCRFD_INFERENCE, Face
 from tracker import CentroidTracker
 # app = SCRFD_INFERENCE(model_path="src/weights/det_10g.onnx", root = "", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 from _process import count_angle, alignface
-from logger import LogText
+from logger import LogCSV
 
 SAVE_DIR = "result" 
 
@@ -97,7 +97,7 @@ app.prepare(ctx_id=0, input_size=(640, 640))
 vid = cv2.VideoCapture("src/IMG_5272.MOV")
 track = CentroidTracker(50)
 
-logg = LogText("result.csv", 
+logg = LogCSV(os.path.join(SAVE_DIR, "result.csv"), 
                ["Size_w", "Size_h", "Confident", "Time_e2e(s)", "Angle(degree)", "Path"])
 
 try: 

@@ -1,5 +1,5 @@
 
-class LogText():
+class LogCSV():
     def __init__(self, path:str, header:list):
         self.data = []
         self.path = path
