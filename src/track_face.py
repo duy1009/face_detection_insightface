@@ -98,10 +98,12 @@ track = CentroidTracker(50)
 
 logg = LogCSV(os.path.join(SAVE_DIR, "result.csv"), 
                ["Size_w", "Size_h", "Confident", "Time_e2e(s)", "Angle(degree)", "Path"])
-
+log2 = LogCSV(os.path.join(SAVE_DIR, "distance", "distance.csv"), 
+              ["width", "height", "distance"])
 try: 
     os.makedirs(SAVE_DIR)
     os.makedirs(os.path.join(SAVE_DIR, "images"))
+    os.makedirs(os.path.join(SAVE_DIR, "distance"))
 except:
     pass
 
@@ -109,6 +111,8 @@ pre = time.time()
 fcnt= 0
 fps = 0
 cnt = 0
+save_dis = False
+dis = 0
 while True:
     now = time.time()
     if now-pre>1:
@@ -128,7 +132,11 @@ while True:
         res = track.update(bbox)
         bbres = findbbox(list(res.values()), bbox)
         imgs_f = cropFaces(rimg, faces)
-        for img_f, face in zip(imgs_f, faces):
+        for fc, (img_f, face) in enumerate(zip(imgs_f, faces)):
+            if save_dis:
+                cv2.imwrite(os.path.join(SAVE_DIR, "distance", f"_{fc}_{dis}_m.png"), img_f)
+                log2.update([img_f.shape[1], img_f.shape[0], dis])
+                log2.save()
             lmk = face["kps"].copy()
             lmk[:,0]-= face["bbox"][0]
             lmk[:,1]-= face["bbox"][1]
@@ -146,15 +154,21 @@ while True:
                          save_path
                          ])
             cnt+=1
-            
+        if len(imgs_f)>0 and save_dis:
+            print("Success!")
+            save_dis = False
         img_show = app.draw_on(rimg, faces)
         img_show = draw(img_show, list(res.keys()), bbres)
     logg.save()
     fcnt+=1
     cv2.putText(img_show, f"FPS: {fps}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)
     cv2.imshow("Faces detection", img_show)
-    if cv2.waitKey(1) == ord("q"):
+    k = cv2.waitKey(1)
+    if k == ord("q"):
         break
+    elif k==ord(" "):  
+        dis = input("Enter distance (m): ")
+        save_dis = True
     # break
 
 cv2.destroyAllWindows()
