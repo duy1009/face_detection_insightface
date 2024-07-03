@@ -7,9 +7,9 @@ from tracker import CentroidTracker
 from _process import count_angle, alignface
 from logger import LogCSV
 
-SAVE_DIR = "result" 
+SAVE_DIR = "result_cong" 
 MODEL_PATH = "src/weights/det_10g.onnx"
-SRC = "src/IMG_5272.MOV"
+SRC = "/home/hungdv/Downloads/video_test/Duy.avi"
 INPUT_SIZE = (640, 640)
 
 def filter(pred, conf = 0.5, angle=180):
@@ -51,6 +51,17 @@ def cropFaces(image_raw, pred):
         bbox = res["bbox"]
         face_imgs.append(cropFace(image_raw, bbox))
     return face_imgs
+
+def alignCrop(image_raw, pred):
+    imgs = []
+    sizes = []
+    for res in pred:
+        lmk = res["kps"]
+        size = res["bbox"][2]-res["bbox"][0], res["bbox"][3]-res["bbox"][1]
+        img = alignface(image_raw, lmk)
+        imgs.append(img)
+        sizes.append(size)
+    return imgs, sizes
 
 def postprocess(pred):
     bboxes, kpss = pred
@@ -98,12 +109,9 @@ track = CentroidTracker(50)
 
 logg = LogCSV(os.path.join(SAVE_DIR, "result.csv"), 
                ["Size_w", "Size_h", "Confident", "Time_e2e(s)", "Angle(degree)", "Path"])
-log2 = LogCSV(os.path.join(SAVE_DIR, "distance", "distance.csv"), 
-              ["width", "height", "distance"])
 try: 
     os.makedirs(SAVE_DIR)
     os.makedirs(os.path.join(SAVE_DIR, "images"))
-    os.makedirs(os.path.join(SAVE_DIR, "distance"))
 except:
     pass
 
@@ -114,49 +122,51 @@ cnt = 0
 save_dis = False
 dis = 0
 while True:
+# import glob
+# for path in glob.glob("/home/hungdv/Downloads/Telegram Desktop/Anh_cham_cong_phong_IT_TC/**.jpg"):
     now = time.time()
     if now-pre>1:
         pre +=1
         fps = fcnt
         fcnt=0
     r, rimg = vid.read()
+    # rimg = cv2.imread(path)
     if not r:
         break
     pred = app.detect(rimg)
     faces_r = postprocess(pred)
     faces = filter(faces_r)
+    img_show = rimg.copy()
     if len(faces)>0:
         json_pred = convertPred2Json(faces)
         bbox = json_pred["bbox"]
         # print(bbox)
         res = track.update(bbox)
         bbres = findbbox(list(res.values()), bbox)
-        imgs_f = cropFaces(rimg, faces)
-        for fc, (img_f, face) in enumerate(zip(imgs_f, faces)):
-            if save_dis:
-                cv2.imwrite(os.path.join(SAVE_DIR, "distance", f"_{fc}_{dis}_m.png"), img_f)
-                log2.update([img_f.shape[1], img_f.shape[0], dis])
-                log2.save()
+        # imgs_f = cropFaces(rimg, faces)
+
+        imgs_f, imgs_size = alignCrop(rimg, faces)
+
+        for fc, (img_f, img_size, face) in enumerate(zip(imgs_f, imgs_size, faces)):
             lmk = face["kps"].copy()
             lmk[:,0]-= face["bbox"][0]
             lmk[:,1]-= face["bbox"][1]
-            img_aligned = alignface(img_f, lmk)
 
             save_path = os.path.join(SAVE_DIR, "images", f"face_{cnt}.png")
-            cv2.imwrite(save_path, img_aligned)
+            cv2.imwrite(save_path, img_f)
             angle = count_angle(lmk)
             proc_time = time.time()-now
-            logg.update([img_f.shape[1],
-                         img_f.shape[0],
-                         face["det_score"],
-                         proc_time,
-                         angle,
-                         save_path
-                         ])
+
+            logg.update([img_size[0],
+                        img_size[1],
+                        face["det_score"],
+                        proc_time,
+                        angle,
+                        save_path
+                        ])
+
             cnt+=1
-        if len(imgs_f)>0 and save_dis:
-            print("Success!")
-            save_dis = False
+
         img_show = app.draw_on(rimg, faces)
         img_show = draw(img_show, list(res.keys()), bbres)
     logg.save()
@@ -166,9 +176,6 @@ while True:
     k = cv2.waitKey(1)
     if k == ord("q"):
         break
-    elif k==ord(" "):  
-        dis = input("Enter distance (m): ")
-        save_dis = True
     # break
 
 cv2.destroyAllWindows()

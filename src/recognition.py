@@ -5,8 +5,8 @@ from logger import LogCSV
 
 DB = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db"
 MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/arc_R50.onnx"
-IMG_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/result/images"
-LOG_RESULT_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/result"
+IMG_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest/images"
+LOG_RESULT_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest"
 
 handler = ArcFaceONNX(MODEL_PATH)
 handler.prepare(ctx_id=0)
@@ -21,6 +21,7 @@ for img_path in db_img_path:
 
 # Make dir to save result
 result_dir = os.path.join(LOG_RESULT_DIR, "arcface")
+print(f"[Result]: {result_dir}")
 try:
     os.makedirs(os.path.join(result_dir, "stranger"))
 except:
@@ -49,7 +50,7 @@ for path in tqdm.tqdm(img_paths):
             feat_same = [feat_name, score]
             score_max = score
     ms = feat_same[0]
-    if feat_same[1] < 0.5:
+    if feat_same[1] < 0.3:
         feat_same[0] = "stranger"
     path_save = os.path.join(result_dir, feat_same[0], os.path.basename(path))
     shutil.copy(path, path_save)
