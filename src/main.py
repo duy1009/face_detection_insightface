@@ -70,11 +70,10 @@ def postprocess(pred):
         ret.append(face)
     return ret
             
-
 def draw_track(img, track_pred):
     dimg = img.copy()
     for track in track_pred:
-        if track["disappeared"] > 0: 
+        if track['disappeared'] > 0: 
             continue
         box = track["bbox"].astype("int")
         id = track["id"]
@@ -123,7 +122,7 @@ def trackIsBetter(track_res, _ids, rate = 0.5):
 app = SCRFD_INFERENCE(model_path=MODEL_PATH)
 app.prepare(ctx_id=0, input_size=INPUT_SIZE)
 vid = cv2.VideoCapture(SRC)
-track = CentroidTracker2(5)
+Track = CentroidTracker2(5)
 
 temp_path = osp.join(SAVE_DIR, "temp", "face.jpg")
 try: 
@@ -159,38 +158,16 @@ while True:
     faces = filter(faces_r)
     img_show = rimg.copy()
     res = []
-    if len(faces)>0: # fix cho nay
-        res = track.update(faces)
-        img_show = app.draw_on(rimg, faces)
-        img_show = draw_track(img_show, res)
+
+    res = Track.update(faces)
+    img_show = app.draw_on(rimg, faces)
+    # print(res)
+    img_show = draw_track(img_show, res)
 
     # Person in  
     track_ids = []   
     persons_in = []
-    # for track_res in res:
-    #     _ids = []
-    #     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
-    #         if track_res["id"] == _id:
-    #             imgs_f, imgs_size = alignCrop(rimg, [track_res])
-    #             if _img_align is None or trackIsBetter(track_res, IDs[_inx]):
-    #                 IDs[_inx][3] = imgs_f[0]
-    #                 IDs[_inx][4] = imgs_size[0]
-    #                 IDs[_inx][5] = count_angle(track_res["kps"])
-    #                 IDs[_inx][6] = False
-    
-    #         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
-    #         if  now - _t > time_request and not _block:
-    #             # imgs_f, imgs_size = alignCrop(rimg, [track_res])
-    #             rep = requestRecognizeFace(IDs[_inx][3], temp_path)
-    #             print("[Request]: re-recognition")
-    #             if rep["name"] == "stranger":
-    #                 rep["name"] = "stranger"+str(track_res["id"])
-    #             if rep["name"] != _name:
-    #                 new_name = rep["name"]
-    #                 log.update_a(["[Change]", str(datetime.datetime.now()), f"{_name} -> {new_name}"])
-    #             IDs[_inx] = [_id, rep["name"], now, None, None, None, True]
-    #         _ids.append(_id)
-    _ids = []
+    ids = []
     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
         if  now - _t > time_request and not _block:
@@ -203,8 +180,7 @@ while True:
                 new_name = rep["name"]
                 log.update_a(["[Change]", str(datetime.datetime.now()), f"{_name} -> {new_name}"])
             IDs[_inx] = [_id, rep["name"], now, None, None, None, True]
-        _ids.append(_id)
-
+        ids.append(_id)
     for track_res in res:
         for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
             if track_res["id"] == _id:
@@ -215,7 +191,7 @@ while True:
                     IDs[_inx][5] = count_angle(track_res["kps"])
                     IDs[_inx][6] = False
                 
-        if track_res["id"] not in _ids:
+        if track_res["id"] not in ids:
             # persons_in.append(track_res)
             imgs_f, imgs_size = alignCrop(rimg, [track_res])
             rep = requestRecognizeFace(imgs_f[0], temp_path)
@@ -234,11 +210,12 @@ while True:
 
     # Person out
     ids_temp = []
-    for _ids in IDs:
-        if _ids[0] not in track_ids:
-            log.update_a([_ids[1], str(datetime.datetime.now()), "Out"])
-        else:
+    for _ids in IDs: # check doan nay ***********************************************************
+        if _ids[0] in track_ids:
             ids_temp.append(_ids)
+        if _ids[0] not in ids:
+            log.update_a([_ids[1], str(datetime.datetime.now()), "Out"])
+            
     IDs = ids_temp
 
 
