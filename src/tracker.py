@@ -25,7 +25,7 @@ def convertObj2Track(obj:OrderedDict, dis: OrderedDict)->list:
     for id, val in obj.items():
         v = val[1].copy()
         v['id'] = id
-        v["disappeared"] = dis[id]
+        v['disappeared'] = dis[id]
         res.append(v)
     return res
 
@@ -192,7 +192,11 @@ class CentroidTracker2():
         del self.disappeared[objectID]
 
     def update(self, pred):
-        rects = convertPred2Json(pred)["bbox"]
+        pred_json = convertPred2Json(pred)
+        if pred_json is None:
+            rects=[]
+        else:
+            rects = pred_json["bbox"]
         # check to see if the list of input bounding box rectangles
         # is empty
         if len(rects) == 0:
@@ -207,7 +211,7 @@ class CentroidTracker2():
                     self.deregister(objectID)
             # return early as there are no centroids or tracking info
             # to update
-            return self.objects
+            return convertObj2Track(self.objects, self.disappeared)
         # initialize an array of input centroids for the current frame
         inputCentroids = np.zeros((len(rects), 2), dtype="int")
         
@@ -298,4 +302,5 @@ class CentroidTracker2():
                 for col in unusedCols:
                     self.register(inputCentroids[col], pred[col])
         # return the set of trackable objects
-        return convertObj2Track(self.objects, self.disappeared)
+        r = convertObj2Track(self.objects, self.disappeared)
+        return r
