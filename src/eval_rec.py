@@ -3,7 +3,7 @@ import numpy as np
 from arcface import ArcFaceONNX
 from logger import LogCSV
 
-MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/arc_R50.onnx"
+MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/arc_R50.onnx"
 
 # Images path on database
 DB = ["/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db/face_0.png",

@@ -1,9 +1,9 @@
 from logger import LogCSV
 import pandas as pd
 import os.path as osp
-detect_csv = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest/result.csv"
-recog_csv = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest/arcface/result.csv"
-path_save = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest/final_resut.csv"
+detect_csv = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc/result.csv"
+recog_csv = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc/arcface/result.csv"
+path_save = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc/final_resut.csv"
 log = LogCSV(path_save, 
              ["Image", "Size_w", "Size_h", "Confident", "Angle(degree)", "Detect_time(s)", "Most_similar", "Similarity", "Result", "Recognition_time(s)"]
              )

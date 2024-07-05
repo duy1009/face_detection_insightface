@@ -143,6 +143,7 @@ fcnt= 0
 fps = 0
 save_dis = False
 IDs = []
+pre_ids = []
 while True:
     now = time.time()
     if now-pre>1:
@@ -166,7 +167,6 @@ while True:
 
     # Person in  
     track_ids = []   
-    persons_in = []
     ids = []
     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
@@ -206,18 +206,21 @@ while True:
     # for img_f, ps in zip(imgs_f, persons_in):
     #     rep = requestRecognizeFace(img_f, temp_path)
     #     print(rep)
-
-
+    # print(ids)
+    ids_now = [i[0] for i in IDs]
     # Person out
     ids_temp = []
-    for _ids in IDs: # check doan nay ***********************************************************
+
+    print(pre_ids, ids_now)
+    for _ids in IDs: 
         if _ids[0] in track_ids:
             ids_temp.append(_ids)
-        if _ids[0] not in ids:
-            log.update_a([_ids[1], str(datetime.datetime.now()), "Out"])
-            
+    for _id, _name in pre_ids:
+        if _id not in ids_now:
+            log.update_a([_name, str(datetime.datetime.now()), "Out"])
+    pre_ids = [(i[0], i[1]) for i in IDs]        
     IDs = ids_temp
-
+    
 
     fcnt+=1
     cv2.putText(img_show, f"FPS: {fps}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)

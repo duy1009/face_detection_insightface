@@ -4,9 +4,9 @@ from arcface import ArcFaceONNX
 from logger import LogCSV
 
 DB = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db"
-MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/arc_R50.onnx"
-IMG_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest/images"
-LOG_RESULT_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/all_datatest"
+MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/arc_R50.onnx"
+IMG_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc/images"
+LOG_RESULT_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc"
 
 handler = ArcFaceONNX(MODEL_PATH)
 handler.prepare(ctx_id=0)
