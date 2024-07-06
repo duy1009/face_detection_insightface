@@ -22,3 +22,4 @@ Output: result.csv, folders image
 5. rename_detect_result.py: Support rename detect result (avoid duplication if there are multiple results need merge)
 6. track_face.py: tracking face and save report detection (result.csv, face aligned images)
 7. test2.py: test detection model (don't save any results)
+8. main.py: detect face -> tracking -> using face recognition API -> log time "In" and time "Out"

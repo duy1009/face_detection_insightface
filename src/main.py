@@ -7,16 +7,28 @@ from _process import count_angle, alignface
 from logger import LogCSV
 import requests
 
+# API
 HOST = '127.0.0.1'
 PORT = '8000'
 
+# Path
 SAVE_DIR = "log" 
 MODEL_PATH = "src/weights/det_10g.onnx"
-SRC = "/home/hungdv/Downloads/video_test/Duy333333333.avi"
-INPUT_SIZE = (640, 640)
+SRC = "/home/hungdv/Downloads/video_test/Duy.avi"
 
+# Config time
 TIME_REQUEST_NSTRANGER= 10  
 TIME_REQUEST_STRANGER = 5
+RESET_LOG = True
+
+# Config face detection
+DET_INPUT_SIZE = (640, 640)
+DET_CONF_FIL = 0.5
+FACE_ANGLE_FIL = 180
+
+# Config tracking
+TRACK_MAX_HIDE_FRAME = 10
+SCORE_RATE = 0.5
 
 def filter(pred, conf = 0.5, angle=180):
     res = []
@@ -70,7 +82,7 @@ def postprocess(pred):
         ret.append(face)
     return ret
             
-def draw_track(img, track_pred):
+def drawTrack(img, track_pred):
     dimg = img.copy()
     for track in track_pred:
         if track['disappeared'] > 0: 
@@ -79,6 +91,20 @@ def draw_track(img, track_pred):
         id = track["id"]
         cv2.rectangle(dimg, (box[0], box[1]), (box[2], box[3]), (0, 150, 255), 2)
         cv2.putText(dimg, f"ID:{id}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 150, 255), 1)
+    return dimg    
+
+def drawFace(img, track_pred, IDs):
+    dimg = img.copy()
+    for track in track_pred:
+        if track['disappeared'] > 0: 
+            continue
+        for _ids in IDs:
+            if track["id"] == _ids[0]:
+                box = track["bbox"].astype("int")
+                color = (0, 150, 255) if _ids[1][:8]!= "stranger" else (255, 105, 0)
+                cv2.rectangle(dimg, (box[0], box[1]), (box[2], box[3]), color, 2)
+                cv2.putText(dimg, f"{_ids[1]}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
+
     return dimg    
 
 def requestRecognizeFace(image, temp_path):
@@ -103,9 +129,8 @@ def getScoreTrack(img_size_avg, angle, r=0.5):
     r1 = img_size_avg/112
     if img_size_avg > 1:
         r1 = 1
-    r2 = 1 - abs(angle)/180
+    r2 = 1 - abs(angle)/90
     return r1*r + r2*(1-r)
-
 
 def trackIsBetter(track_res, _ids, rate = 0.5):
     track_angle = count_angle(track_res["kps"])
@@ -113,31 +138,29 @@ def trackIsBetter(track_res, _ids, rate = 0.5):
 
     old_img_size = (_ids[4][0] + _ids[4][1])/2
 
-    sc1 = getScoreTrack(track_res_img_size, track_angle)
-    sc2 = getScoreTrack(old_img_size, _ids[5])
+    sc1 = getScoreTrack(track_res_img_size, track_angle, rate)
+    sc2 = getScoreTrack(old_img_size, _ids[5], rate)
     return sc1 > sc2
     
-
-
 app = SCRFD_INFERENCE(model_path=MODEL_PATH)
-app.prepare(ctx_id=0, input_size=INPUT_SIZE)
+app.prepare(ctx_id=0, input_size=DET_INPUT_SIZE)
 vid = cv2.VideoCapture(SRC)
-Track = CentroidTracker2(5)
+Track = CentroidTracker2(TRACK_MAX_HIDE_FRAME)
 
 temp_path = osp.join(SAVE_DIR, "temp", "face.jpg")
-try: 
-    os.makedirs(SAVE_DIR)
-except:
-    pass
-try:
+if not osp.exists(osp.join(SAVE_DIR, "temp")):
     os.makedirs(osp.join(SAVE_DIR, "temp"))
-except:
-    pass
-log = LogCSV(osp.join(SAVE_DIR, "log.csv"),
-             ["ID", "Time", "State"],
-             "a"
+path_log = osp.join(SAVE_DIR, "log.csv")
+if RESET_LOG and osp.exists(path_log):
+    os.remove(path_log)
+
+log = LogCSV(path = path_log,
+             header = ["ID", "Similarity", "Time", "State"],
+             mode = 'a'
              )
 
+if not RESET_LOG:
+    log.update_a(["-", 0, str(datetime.datetime.now()), "Reset device!"])
 pre = time.time()
 fcnt= 0
 fps = 0
@@ -151,78 +174,67 @@ while True:
         fps = fcnt
         fcnt=0
     r, rimg = vid.read()
-    # rimg = cv2.imread(path)
     if not r:
         break
     pred = app.detect(rimg)
     faces_r = postprocess(pred)
-    faces = filter(faces_r)
+    faces = filter(faces_r, DET_CONF_FIL, FACE_ANGLE_FIL)
     img_show = rimg.copy()
-    res = []
-
     res = Track.update(faces)
-    img_show = app.draw_on(rimg, faces)
-    # print(res)
-    img_show = draw_track(img_show, res)
-
-    # Person in  
-    track_ids = []   
+    
+    # re-recognition
     ids = []
     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
         if  now - _t > time_request and not _block:
-            # imgs_f, imgs_size = alignCrop(rimg, [track_res])
             rep = requestRecognizeFace(IDs[_inx][3], temp_path)
             print("[Request]: re-recognition")
             if rep["name"] == "stranger":
                 rep["name"] = "stranger"+str(_id)
             if rep["name"] != _name:
                 new_name = rep["name"]
-                log.update_a(["[Change]", str(datetime.datetime.now()), f"{_name} -> {new_name}"])
+                log.update_a(["[Change]", rep["score"], str(datetime.datetime.now()), f"{_name} -> {new_name}"])
             IDs[_inx] = [_id, rep["name"], now, None, None, None, True]
         ids.append(_id)
+
+    # Person in  
+    track_ids = [] 
     for track_res in res:
         for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
+            # Update better image
             if track_res["id"] == _id:
-                imgs_f, imgs_size = alignCrop(rimg, [track_res])
-                if _img_align is None or trackIsBetter(track_res, IDs[_inx]):
+                if _img_align is None or trackIsBetter(track_res, IDs[_inx], SCORE_RATE):
+                    imgs_f, imgs_size = alignCrop(rimg, [track_res])
                     IDs[_inx][3] = imgs_f[0]
                     IDs[_inx][4] = imgs_size[0]
                     IDs[_inx][5] = count_angle(track_res["kps"])
                     IDs[_inx][6] = False
-                
+        # Check new person
         if track_res["id"] not in ids:
-            # persons_in.append(track_res)
             imgs_f, imgs_size = alignCrop(rimg, [track_res])
             rep = requestRecognizeFace(imgs_f[0], temp_path)
             print("[Request]: new person")
             if rep["name"] == "stranger":
                 rep["name"] = "stranger"+str(track_res["id"])
-            log.update_a([rep["name"], str(datetime.datetime.now()), "In"])
+            log.update_a([rep["name"], rep["score"], str(datetime.datetime.now()), "In"])
             IDs.append([track_res["id"], rep["name"],  now, None, None, None, True])
         track_ids.append(track_res["id"])
     
-    # imgs_f, imgs_size = alignCrop(rimg, persons_in)
-    # for img_f, ps in zip(imgs_f, persons_in):
-    #     rep = requestRecognizeFace(img_f, temp_path)
-    #     print(rep)
-    # print(ids)
-    ids_now = [i[0] for i in IDs]
     # Person out
-    ids_temp = []
+    ids_now = [i[0] for i in IDs]
+    for _id, _name in pre_ids:
+        if _id not in ids_now:
+            log.update_a([_name,"-", str(datetime.datetime.now()), "Out"])
+    pre_ids = [(i[0], i[1]) for i in IDs]        
 
-    print(pre_ids, ids_now)
+    ids_temp = []
     for _ids in IDs: 
         if _ids[0] in track_ids:
             ids_temp.append(_ids)
-    for _id, _name in pre_ids:
-        if _id not in ids_now:
-            log.update_a([_name, str(datetime.datetime.now()), "Out"])
-    pre_ids = [(i[0], i[1]) for i in IDs]        
     IDs = ids_temp
     
-
     fcnt+=1
+    img_show = drawFace(img_show, res, IDs)
     cv2.putText(img_show, f"FPS: {fps}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)
     cv2.imshow("Faces detection", img_show)
     k = cv2.waitKey(1)

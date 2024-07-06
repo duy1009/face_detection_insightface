@@ -36,6 +36,7 @@ def getSimilarFace(img):
             score_max = score
     if feat_same[1] < 0.3:
         feat_same[0] = "stranger"
+    feat_same[1] = (1+feat_same[1])/2
     return {
         "name": feat_same[0],
         "score": float(feat_same[1])
