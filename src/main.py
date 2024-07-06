@@ -8,13 +8,13 @@ from logger import LogCSV
 import requests
 
 # API
-HOST = '127.0.0.1'
+HOST = '192.168.2.233'
 PORT = '8000'
 
 # Path
 SAVE_DIR = "log" 
-MODEL_PATH = "src/weights/det_10g.onnx"
-SRC = "/home/hungdv/Downloads/video_test/Duy.avi"
+MODEL_PATH = "weights/det_10g.onnx"
+SRC = 0
 
 # Config time
 TIME_REQUEST_NSTRANGER= 10  

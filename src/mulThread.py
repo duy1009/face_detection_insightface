@@ -8,14 +8,14 @@ from logger import LogCSV
 import requests
 from threading import Thread
 # API
-HOST = '127.0.0.1'
+HOST = '192.168.2.233'
 PORT = '8000'
 
 # Path
 SAVE_DIR = "log" 
-MODEL_PATH = "src/weights/det_10g.onnx"
-SRC = "/home/hungdv/Downloads/video_test/Duy.avi"
-
+MODEL_PATH = "weights/det_10g.onnx"
+SRC = r"E:\tcgroup\face_detection_insightface\src\test_vid.mp4"
+SRC = 0
 # Config time
 TIME_REQUEST_NSTRANGER= 10  
 TIME_REQUEST_STRANGER = 5
@@ -109,8 +109,9 @@ def drawFace(img, track_pred, IDs):
 
 NP_buffer = []
 processing_ids = []
+enable_write = True
 def requestRecognizeFace(image, temp_path, id):
-    global NP_buffer, processing_ids
+    global NP_buffer, processing_ids, enable_write
     processing_ids.append(id)
     cv2.imwrite(temp_path, image)
     files = {"image": open(temp_path, 'rb')}
@@ -118,13 +119,19 @@ def requestRecognizeFace(image, temp_path, id):
     
     if resp.status_code == 200:
         data_recv = resp.json()
+        enable_write = True
         NP_buffer.append([id, data_recv["name"], data_recv["score"]])
+        enable_write = False
     processing_ids.remove(id)
 
 def sendRequest(image, temp_path, id):
     thr = Thread(target=requestRecognizeFace, args=(image, temp_path, id))
     thr.start()
+    # thr.join()
 
+def waitWrite():
+    while enable_write:
+        continue
 
 def getListNotStranger(IDs):
     ids = {}
@@ -156,24 +163,27 @@ def updateNewPerson(IDs:list):
     '''
     IDs = IDs.copy()
     global NP_buffer
+    now = time.time()
     while len(NP_buffer)>0:
+        waitWrite()
         new_person = NP_buffer.pop(0)
         edit = False
-        for _person in IDs:
+        for _inx, _person in enumerate(IDs):
             if new_person[0] == _person[0]:
                 if new_person[1] == "stranger":
-                    new_person[1] = "stranger"+str(_id)
+                    new_person[1] = "stranger"+str(_person[0])
                 if new_person[1] != _name:
                     new_name = new_person[1]
                     log.update_a(["[Change]", new_person[2], str(datetime.datetime.now()), f"{_name} -> {new_name}"])
-                IDs[_inx] = [_id, new_person[1], now, None, None, None, True]
+                IDs[_inx] = [_person[0], new_person[1], time.time(), None, None, None, True]
                 edit = True
+                break
         
         if not edit:
             if new_person[1] == "stranger":
                 new_person[1] = "stranger"+str(new_person[0])
             log.update_a([new_person[1], new_person[2], str(datetime.datetime.now()), "In"])
-            IDs.append([new_person[0], new_person[1],  now, None, None, None, True])
+            IDs.append([new_person[0], new_person[1],  time.time(), None, None, None, True])
     return IDs
 
 app = SCRFD_INFERENCE(model_path=MODEL_PATH)
@@ -223,7 +233,7 @@ while True:
         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
         if  now - _t > time_request and not _block and _id not in processing_ids:
             print("[Request]: re-recognition")
-            requestRecognizeFace(IDs[_inx][3], temp_path, _id)
+            sendRequest(IDs[_inx][3], temp_path, _id)
         ids.append(_id)
     # Person in  
     track_ids = [] 
@@ -241,7 +251,7 @@ while True:
         if track_res["id"] not in ids + processing_ids:
             imgs_f, imgs_size = alignCrop(rimg, [track_res])
             print("[Request]: new person")
-            requestRecognizeFace(imgs_f[0], temp_path, track_res["id"])
+            sendRequest(imgs_f[0], temp_path, track_res["id"])
         track_ids.append(track_res["id"])
     # print(NP_buffer)
     IDs = updateNewPerson(IDs)
