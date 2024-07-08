@@ -116,7 +116,6 @@ def requestRecognizeFace(image, temp_path, id):
     cv2.imwrite(temp_path, image)
     files = {"image": open(temp_path, 'rb')}
     resp = requests.post(f'http://{HOST}:{PORT}/recognize_face', files=files)
-    
     if resp.status_code == 200:
         data_recv = resp.json()
         enable_write = True
@@ -125,8 +124,10 @@ def requestRecognizeFace(image, temp_path, id):
     processing_ids.remove(id)
 
 def sendRequest(image, temp_path, id):
-    thr = Thread(target=requestRecognizeFace, args=(image, temp_path, id))
-    thr.start()
+    global processing_ids
+    if len(processing_ids)<10:
+        thr = Thread(target=requestRecognizeFace, args=(image, temp_path, id))
+        thr.start()
     # thr.join()
 
 def waitWrite():
@@ -227,6 +228,7 @@ while True:
     img_show = rimg.copy()
     res = Track.update(faces)
     
+    IDs = updateNewPerson(IDs)
     # re-recognition
     ids = []
     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
@@ -234,6 +236,7 @@ while True:
         if  now - _t > time_request and not _block and _id not in processing_ids:
             print("[Request]: re-recognition")
             sendRequest(IDs[_inx][3], temp_path, _id)
+            IDs[_inx][2] = now
         ids.append(_id)
     # Person in  
     track_ids = [] 
@@ -254,7 +257,7 @@ while True:
             sendRequest(imgs_f[0], temp_path, track_res["id"])
         track_ids.append(track_res["id"])
     # print(NP_buffer)
-    IDs = updateNewPerson(IDs)
+    
     
     # Person out
     ids_now = [i[0] for i in IDs]
