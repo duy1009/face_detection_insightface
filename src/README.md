@@ -23,3 +23,6 @@ Output: result.csv, folders image
 6. track_face.py: tracking face and save report detection (result.csv, face aligned images)
 7. test2.py: test detection model (don't save any results)
 8. main.py: detect face -> tracking -> using face recognition API -> log time "In" and time "Out"
+
+### Export tensorrt
+```trtexec --onnx=resnet50/model.onnx --saveEngine=resnet_engine.trt```

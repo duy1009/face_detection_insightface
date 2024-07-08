@@ -13,9 +13,9 @@ PORT = '8000'
 
 # Path
 SAVE_DIR = "log" 
-MODEL_PATH = "weights/det_10g.onnx"
-SRC = r"E:\tcgroup\face_detection_insightface\src\test_vid.mp4"
-SRC = 0
+MODEL_PATH = "src/weights/det_10g.onnx"
+SRC = r"src/test_vid.mp4"
+# SRC = 0
 # Config time
 TIME_REQUEST_NSTRANGER= 10  
 TIME_REQUEST_STRANGER = 5
