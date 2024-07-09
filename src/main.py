@@ -6,30 +6,7 @@ from tracker import CentroidTracker2
 from _process import count_angle, alignface
 from logger import LogCSV
 import requests
-
-# API
-HOST = '192.168.2.233'
-PORT = '8000'
-
-# Path
-SAVE_DIR = "log" 
-MODEL_PATH = "weights/det_10g.onnx"
-SRC = 0
-
-# Config time
-TIME_REQUEST_NSTRANGER= 10  
-TIME_REQUEST_STRANGER = 5
-RESET_LOG = True
-
-# Config face detection
-DET_INPUT_SIZE = (640, 640)
-DET_CONF_FIL = 0.5
-FACE_ANGLE_FIL = 180
-
-# Config tracking
-TRACK_MAX_HIDE_FRAME = 10
-SCORE_RATE = 0.5
-
+from config import *
 def filter(pred, conf = 0.5, angle=180):
     res = []
     for i in pred:
@@ -147,10 +124,10 @@ app.prepare(ctx_id=0, input_size=DET_INPUT_SIZE)
 vid = cv2.VideoCapture(SRC)
 Track = CentroidTracker2(TRACK_MAX_HIDE_FRAME)
 
-temp_path = osp.join(SAVE_DIR, "temp", "face.jpg")
-if not osp.exists(osp.join(SAVE_DIR, "temp")):
-    os.makedirs(osp.join(SAVE_DIR, "temp"))
-path_log = osp.join(SAVE_DIR, "log.csv")
+temp_path = osp.join(LOG_DIR, "temp", "face.jpg")
+if not osp.exists(osp.join(LOG_DIR, "temp")):
+    os.makedirs(osp.join(LOG_DIR, "temp"))
+path_log = osp.join(LOG_DIR, "log.csv")
 if RESET_LOG and osp.exists(path_log):
     os.remove(path_log)
 

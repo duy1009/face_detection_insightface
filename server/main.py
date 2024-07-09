@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Body
 from arcface import ArcFaceONNX
 from PIL import Image
-import glob, os, datetime
+import glob, os, datetime, time
 import numpy as np
 import pandas as pd
 
@@ -9,6 +9,7 @@ app = FastAPI()
 MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/arc_R50.onnx"
 DB = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db"
 LOG_DIR = "log"
+TIME_IS_DISCONNECT_SYNC = 20
 
 def convertStr2Time(str):
     return datetime.datetime.strptime(str, ' %Y-%m-%d %H:%M:%S.%f')
@@ -61,8 +62,15 @@ async def root(image: UploadFile = File(...)):
 
     return getSimilarFace(image)
 
+pre_time = time.time()
+log_disconnect = False
 @app.get("/last_time_log") 
 def syncLastTime(): 
+    global pre_time, log_disconnect
+    now = time.time()
+    if now - pre_time > TIME_IS_DISCONNECT_SYNC:
+        log_disconnect = True
+    pre_time = now
     # contents = image.file.read()
     files = glob.glob(os.path.join(LOG_DIR, "**.csv"))
     pre_date = datetime.datetime.strptime("2020-01-01", "%Y-%m-%d").date()
@@ -86,14 +94,23 @@ def syncLastTime():
         fr_date_time = " 2020-01-01 00:00:00.00000"
     return fr_date_time
 
+
 @app.post("/log_sync") 
 async def syncLog(sync_data: str = Body(..., embed=True)): 
-    print(sync_data.split("\n"))
+    global log_disconnect
     date = sync_data.split("\n")[0].split(", ")[2].split(" ")[0]
     
     file_path = os.path.join(LOG_DIR, f"log_{date}.csv")
-    print(file_path)
+    
+    dstart = ""
+    if not os.path.exists(file_path):
+        print("Init file")
+        dstart+="ID, Similarity, Time, State\n"
+    if log_disconnect:
+        print("Disconnected")
+        dstart+="-, -, -, Sync not run\n"
+        log_disconnect = False
     f = open(file_path, "a")
-    f.write(sync_data)
+    f.write(dstart+sync_data)
     f.close()
     return {"msg":"Success"}
