@@ -142,9 +142,10 @@ while True:
     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
         if  now - _t > time_request and not _block and _id not in processing_ids:
-            print("[Request]: re-recognition")
-            sendRequest(_img_align, temp_path, _id)
-            IDs[_inx][2] = now
+            if (imgs_size[0] + imgs_size[1])/2 > IMG_SIZE_REQUEST_MIN:
+                print("[Request]: re-recognition")
+                sendRequest(_img_align, temp_path, _id)
+                IDs[_inx][2] = now
         ids.append(_id)
 
     # Person in  
@@ -162,8 +163,9 @@ while True:
         # Check new person
         if track_res["id"] not in ids + processing_ids:
             imgs_f, imgs_size = alignCrop(rimg, [track_res])
-            print("[Request]: new person")
-            sendRequest(imgs_f[0], temp_path, track_res["id"])
+            if (imgs_size[0][0] + imgs_size[0][1])/2 > IMG_SIZE_REQUEST_MIN:
+                print("[Request]: new person")
+                sendRequest(imgs_f[0], temp_path, track_res["id"])
         track_ids.append(track_res["id"])
     
     # Person out

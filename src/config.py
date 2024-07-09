@@ -21,5 +21,8 @@ FACE_ANGLE_FIL = 180
 TRACK_MAX_HIDE_FRAME = 10
 SCORE_RATE = 0.5
 
+# Config recognize
+IMG_SIZE_REQUEST_MIN = 50
+
 # Log sync
 TIME_SYNC = 3
