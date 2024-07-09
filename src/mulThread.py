@@ -7,14 +7,15 @@ from _process import count_angle, alignface
 from logger import LogCSV
 import requests
 from threading import Thread
+from log_syn import run
 # API
-HOST = '192.168.2.233'
+HOST = '127.0.0.1'
 PORT = '8000'
 
 # Path
 SAVE_DIR = "log" 
-MODEL_PATH = "src/weights/det_10g.onnx"
-SRC = r"src/test_vid.mp4"
+MODEL_PATH = "weights/det_10g.onnx"
+SRC = r"test_vid.mp4"
 # SRC = 0
 # Config time
 TIME_REQUEST_NSTRANGER= 10  
@@ -29,6 +30,8 @@ FACE_ANGLE_FIL = 180
 # Config tracking
 TRACK_MAX_HIDE_FRAME = 10
 SCORE_RATE = 0.5
+
+TIME_SYNC = 3
 
 def filter(pred, conf = 0.5, angle=180):
     res = []
@@ -158,7 +161,6 @@ def trackIsBetter(track_res, _ids, rate = 0.5):
     sc2 = getScoreTrack(old_img_size, _ids[5], rate)
     return sc1 > sc2
 
-
 def updateNewPerson(IDs:list):
     '''NP_buffer: [length, (id, name, score)]
     '''
@@ -187,6 +189,12 @@ def updateNewPerson(IDs:list):
             IDs.append([new_person[0], new_person[1],  time.time(), None, None, None, True])
     return IDs
 
+def syncLogThread():
+    global kill_sync
+    while not kill_sync:
+        run()
+        time.sleep(TIME_SYNC)
+
 app = SCRFD_INFERENCE(model_path=MODEL_PATH)
 app.prepare(ctx_id=0, input_size=DET_INPUT_SIZE)
 vid = cv2.VideoCapture(SRC)
@@ -195,7 +203,7 @@ Track = CentroidTracker2(TRACK_MAX_HIDE_FRAME)
 temp_path = osp.join(SAVE_DIR, "temp", "face.jpg")
 if not osp.exists(osp.join(SAVE_DIR, "temp")):
     os.makedirs(osp.join(SAVE_DIR, "temp"))
-path_log = osp.join(SAVE_DIR, "log.csv")
+path_log = osp.join(SAVE_DIR, f"log_{datetime.date.today()}.csv")
 if RESET_LOG and osp.exists(path_log):
     os.remove(path_log)
 
@@ -212,6 +220,12 @@ fps = 0
 save_dis = False
 IDs = []
 pre_ids = []
+pre_day = datetime.date.today()
+kill_sync = False
+
+sync_log_thr = Thread(target=syncLogThread)
+sync_log_thr.start()
+print("[Started log sync]")
 
 while True:
     now = time.time()
@@ -219,6 +233,12 @@ while True:
         pre +=1
         fps = fcnt
         fcnt=0
+    if pre_day != datetime.date.today():
+        path_log = osp.join(SAVE_DIR, f"log_{datetime.date.today()}.csv")
+        log = LogCSV(path = path_log,
+             header = ["ID", "Similarity", "Time", "State"],
+             mode = 'a'
+             )
     r, rimg = vid.read()
     if not r:
         break
@@ -280,4 +300,5 @@ while True:
         break
     # break
 
+kill_sync = True
 cv2.destroyAllWindows()
