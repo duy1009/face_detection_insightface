@@ -1,12 +1,21 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Body
 from arcface import ArcFaceONNX
 from PIL import Image
-import glob, os
+import glob, os, datetime
 import numpy as np
+import pandas as pd
 
 app = FastAPI() 
 MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/arc_R50.onnx"
 DB = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db"
+LOG_DIR = "log"
+
+def convertStr2Time(str):
+    return datetime.datetime.strptime(str, ' %Y-%m-%d %H:%M:%S.%f')
+
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
 handler = ArcFaceONNX(MODEL_PATH)
 handler.prepare(ctx_id=0)
 
@@ -14,6 +23,7 @@ handler.prepare(ctx_id=0)
 # Load faces feature from database
 db_img_path = glob.glob(os.path.join(DB, "**.png")) + glob.glob(os.path.join(DB, "**.jpg"))
 feat_db = {}
+
 for img_path in db_img_path:
     pil_image = Image.open(img_path).convert('RGB')
     open_cv_image = np.array(pil_image)
@@ -50,3 +60,40 @@ async def root(image: UploadFile = File(...)):
     image = Image.open(image.file).convert("RGB")
 
     return getSimilarFace(image)
+
+@app.get("/last_time_log") 
+def syncLastTime(): 
+    # contents = image.file.read()
+    files = glob.glob(os.path.join(LOG_DIR, "**.csv"))
+    pre_date = datetime.datetime.strptime("2020-01-01", "%Y-%m-%d").date()
+    empty = True
+    for file in files:
+        try:
+            f_date = datetime.datetime.strptime(os.path.basename(file)[4:-4], "%Y-%m-%d").date()
+        except: continue
+        if f_date>pre_date:
+            pre_date = f_date
+            empty = False
+    if not empty:
+        file_path = os.path.join(LOG_DIR, f"log_{str(pre_date)}.csv")
+        df = pd.read_csv(file_path).values
+        if len(df)>0:
+            frame = df[-1]
+            fr_date_time = frame[2]
+        else:
+            fr_date_time = f" {pre_date} 00:00:00.00000"
+    else:
+        fr_date_time = " 2020-01-01 00:00:00.00000"
+    return fr_date_time
+
+@app.post("/log_sync") 
+async def syncLog(sync_data: str = Body(..., embed=True)): 
+    print(sync_data.split("\n"))
+    date = sync_data.split("\n")[0].split(", ")[2].split(" ")[0]
+    
+    file_path = os.path.join(LOG_DIR, f"log_{date}.csv")
+    print(file_path)
+    f = open(file_path, "a")
+    f.write(sync_data)
+    f.close()
+    return {"msg":"Success"}
