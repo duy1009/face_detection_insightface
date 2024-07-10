@@ -186,10 +186,13 @@ while True:
             ids_temp.append(_ids)
     IDs = ids_temp
     fcnt+=1
-    img_show = drawFace(img_show, res, IDs)
+    if SHOW_DETECT:
+        img_show = app.draw_on(img_show, faces_r)
+    if SHOW_RECOGNIZE:
+        img_show = drawFace(img_show, res, IDs)
     cv2.putText(img_show, f"FPS: {fps}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)
     cv2.imshow("Faces detection", img_show)
-    k = cv2.waitKey(1)
+    k = cv2.waitKey(time_sleep)
     if k == ord("q"):
         break
     # break
