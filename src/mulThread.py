@@ -27,7 +27,7 @@ def requestRecognizeFace(image, id):
 
 def sendRequest(image, id):
     global processing_ids
-    if len(processing_ids)<10:
+    if len(processing_ids)<THREAD_REQUEST_MAX:
         thr = Thread(target=requestRecognizeFace, args=(image, id))
         thr.start()
     # thr.join()
@@ -105,6 +105,12 @@ print("[Started log sync]")
 
 while True:
     now = time.time()
+
+    tempurature = int(os.popen('cat /sys/devices/virtual/thermal/thermal_zone0/temp').read())
+    time_sleep = WARM_DELAY_TIME if tempurature > TEMPURATURE_WARM else NORMAL_DELAY_TIME
+    print(f"Temp: {tempurature/1000} degree")
+    if tempurature > TEMPURATURE_HOT:
+        continue
     # Check FPS
     if now-pre>1:
         pre +=1
