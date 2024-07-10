@@ -191,7 +191,7 @@ while True:
     if SHOW_RECOGNIZE:
         img_show = drawFace(img_show, res, IDs)
     cv2.putText(img_show, f"FPS: {fps}", (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (170, 0, 0), 1)
-    cv2.imshow("Faces detection", img_show)
+    cv2.imshow("Faces detection", cv2.resize(img_show, IMG_SIZE_SHOW))
     k = cv2.waitKey(time_sleep)
     if k == ord("q"):
         break
