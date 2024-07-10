@@ -4,20 +4,19 @@ from scrfd import SCRFD_INFERENCE
 from tracker import CentroidTracker2
 from _process import count_angle
 from logger import LogCSV
-import requests
+import requests, io
 from threading import Thread
 from log_syn import run
 from config import *
 from utils import *
-
 NP_buffer = []
 processing_ids = []
 enable_write = True
-def requestRecognizeFace(image, temp_path, id):
+def requestRecognizeFace(image, id):
     global NP_buffer, processing_ids, enable_write
     processing_ids.append(id)
-    cv2.imwrite(temp_path, image)
-    files = {"image": open(temp_path, 'rb')}
+    image_byte = cv2.imencode(".jpg", image)[1].tobytes()
+    files = {"image": io.BufferedReader(io.BytesIO(image_byte))}
     resp = requests.post(f'http://{HOST}:{PORT}/recognize_face', files=files)
     if resp.status_code == 200:
         data_recv = resp.json()
@@ -26,14 +25,15 @@ def requestRecognizeFace(image, temp_path, id):
         enable_write = False
     processing_ids.remove(id)
 
-def sendRequest(image, temp_path, id):
+def sendRequest(image, id):
     global processing_ids
     if len(processing_ids)<10:
-        thr = Thread(target=requestRecognizeFace, args=(image, temp_path, id))
+        thr = Thread(target=requestRecognizeFace, args=(image, id))
         thr.start()
     # thr.join()
 
 def waitWrite():
+    global enable_write
     while enable_write:
         continue
 def updateNewPerson(IDs:list):
@@ -131,7 +131,6 @@ while True:
 
     # Filter bad faces
     faces = filter(faces_r, DET_CONF_FIL, FACE_ANGLE_FIL)
-
     
     # Tracking faces
     res = Track.update(faces)
@@ -144,7 +143,7 @@ while True:
         if  now - _t > time_request and not _block and _id not in processing_ids:
             if (imgs_size[0][0] + imgs_size[0][1])/2 > IMG_SIZE_REQUEST_MIN:
                 print("[Request]: re-recognition")
-                sendRequest(_img_align, temp_path, _id)
+                sendRequest(_img_align, _id)
                 IDs[_inx][2] = now
         ids.append(_id)
 
@@ -165,7 +164,7 @@ while True:
             imgs_f, imgs_size = alignCrop(rimg, [track_res])
             if (imgs_size[0][0] + imgs_size[0][1])/2 > IMG_SIZE_REQUEST_MIN:
                 print("[Request]: new person")
-                sendRequest(imgs_f[0], temp_path, track_res["id"])
+                sendRequest(imgs_f[0], track_res["id"])
         track_ids.append(track_res["id"])
     
     # Person out
