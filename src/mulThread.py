@@ -50,9 +50,10 @@ def updateNewPerson(IDs:list):
                 if new_person[1] == "stranger":
                     new_person[1] +=str(_person[0]) if LOG_MODE == 0 else ""
                 if new_person[1] != _person[1]:
-                    new_name = new_person[1]
                     if LOG_MODE == 0:
-                        log.update_a([f"{_person[1]} -> {new_name}", new_person[2], str(datetime.datetime.now()), "Change"])
+                        log.update_a([f"{_person[1]} -> {new_person[1]}", new_person[2], str(datetime.datetime.now()), "Change"])
+                    else:
+                        log.update_a([new_person[1], new_person[2], str(datetime.datetime.now())])
                 IDs[_inx] = [_person[0], new_person[1], time.time(), None, None, None, True]
                 edit = True
                 break
