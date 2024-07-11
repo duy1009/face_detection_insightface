@@ -5,9 +5,9 @@ PORT = '8000'
 # Path
 LOG_DIR = "log" 
 MODEL_PATH = "weights/det_10g.onnx"
-SRC = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/src/IMG_5272.MOV"
+# SRC = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/src/IMG_5272.MOV"
 LOG_MODE = 1
-# SRC = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=(int)3264, height=(int)2464, framerate=(fraction)21/1 ! nvvidconv flip-method=0 ! video/x-raw, width=(int)3264, height=(int)3264, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink drop=True"
+SRC = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=(int)3264, height=(int)2464, framerate=(fraction)21/1 ! nvvidconv flip-method=0 ! video/x-raw, width=(int)3264, height=(int)2464, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink drop=True"
 
 # Config time
 TIME_REQUEST_NSTRANGER= 10  

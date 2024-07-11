@@ -62,7 +62,7 @@ def drawTrack(img, track_pred):
         box = track["bbox"].astype("int")
         id = track["id"]
         cv2.rectangle(dimg, (box[0], box[1]), (box[2], box[3]), (0, 150, 255), 2)
-        cv2.putText(dimg, f"ID:{id}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 150, 255), 1)
+        cv2.putText(dimg, f"ID:{id}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 150, 255), 2)
     return dimg    
 
 def drawFace(img, track_pred, IDs):
@@ -75,7 +75,7 @@ def drawFace(img, track_pred, IDs):
                 box = track["bbox"].astype("int")
                 color = (0, 150, 255) if _ids[1][:8]!= "stranger" else (255, 105, 0)
                 cv2.rectangle(dimg, (box[0], box[1]), (box[2], box[3]), color, 2)
-                cv2.putText(dimg, f"{_ids[1]}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
+                cv2.putText(dimg, f"{_ids[1]}", (box[0], max(0, box[1]-5)), cv2.FONT_HERSHEY_COMPLEX, 1, color, 2)
 
     return dimg    
 
