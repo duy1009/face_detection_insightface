@@ -153,7 +153,7 @@ while True:
     for _inx, (_id,_name, _t, _img_align, _img_size, _angle, _block) in enumerate(IDs):
         time_request = TIME_REQUEST_NSTRANGER if len(_name) >8 and _name[:8] != "stranger" else TIME_REQUEST_STRANGER
         if  now - _t > time_request and not _block and _id not in processing_ids:
-            if (imgs_size[0][0] + imgs_size[0][1])/2 > IMG_SIZE_REQUEST_MIN:
+            if (_img_size[0][0] + _img_size[0][1])/2 > IMG_SIZE_REQUEST_MIN and ANGLE_REQUEST_MIN > abs(_angle):
                 print("[Request]: re-recognition")
                 sendRequest(_img_align, _id)
                 IDs[_inx][2] = now
