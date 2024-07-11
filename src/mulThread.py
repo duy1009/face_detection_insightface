@@ -41,7 +41,6 @@ def updateNewPerson(IDs:list):
     '''
     IDs = IDs.copy()
     global NP_buffer
-    now = time.time()
     while len(NP_buffer)>0:
         waitWrite()
         new_person = NP_buffer.pop(0)
@@ -49,18 +48,22 @@ def updateNewPerson(IDs:list):
         for _inx, _person in enumerate(IDs):
             if new_person[0] == _person[0]:
                 if new_person[1] == "stranger":
-                    new_person[1] = "stranger"+str(_person[0])
+                    new_person[1] +=str(_person[0]) if LOG_MODE == 0 else ""
                 if new_person[1] != _person[1]:
                     new_name = new_person[1]
-                    log.update_a([f"{_person[1]} -> {new_name}", new_person[2], str(datetime.datetime.now()), "Change"])
+                    if LOG_MODE == 0:
+                        log.update_a([f"{_person[1]} -> {new_name}", new_person[2], str(datetime.datetime.now()), "Change"])
                 IDs[_inx] = [_person[0], new_person[1], time.time(), None, None, None, True]
                 edit = True
                 break
         
         if not edit:
             if new_person[1] == "stranger":
-                new_person[1] = "stranger"+str(new_person[0])
-            log.update_a([new_person[1], new_person[2], str(datetime.datetime.now()), "In"])
+                new_person[1] +=str(new_person[0]) if LOG_MODE == 0 else ""
+            log_i4 = [new_person[1], new_person[2], str(datetime.datetime.now())]
+            if LOG_MODE == 0:
+                log_i4.append("In")
+            log.update_a(log_i4)
             IDs.append([new_person[0], new_person[1],  time.time(), None, None, None, True])
     return IDs
 
@@ -83,11 +86,12 @@ if not osp.exists(osp.join(LOG_DIR, "temp")):
 path_log = osp.join(LOG_DIR, f"log_{datetime.date.today()}.csv")
 if RESET_LOG and osp.exists(path_log):
     os.remove(path_log)
+header = ["ID", "Similarity", "Time", "State"] if LOG_MODE == 0 else ["ID", "Similarity", "Time"]
 log = LogCSV(path = path_log,
-             header = ["ID", "Similarity", "Time", "State"],
+             header = header,
              mode = 'a'
              )
-if not RESET_LOG:
+if LOG_MODE ==0 and not RESET_LOG:
     log.update_a(["-", 0, str(datetime.datetime.now()), "Reset device!"])
 
 pre = time.time()
@@ -105,8 +109,9 @@ print("[Started log sync]")
 
 while True:
     now = time.time()
-
-    tempurature = int(os.popen('cat /sys/devices/virtual/thermal/thermal_zone0/temp').read())
+    temp_file = os.popen('cat /sys/devices/virtual/thermal/thermal_zone0/temp')
+    tempurature = int(temp_file.read())
+    temp_file.close()
     time_sleep = WARM_DELAY_TIME if tempurature > TEMPURATURE_WARM else NORMAL_DELAY_TIME
     print(f"Temp: {tempurature/1000} degree")
     if tempurature > TEMPURATURE_HOT:
@@ -121,7 +126,7 @@ while True:
     if pre_day != datetime.date.today():
         path_log = osp.join(LOG_DIR, f"log_{datetime.date.today()}.csv")
         log = LogCSV(path = path_log,
-             header = ["ID", "Similarity", "Time", "State"],
+             header = header,
              mode = 'a'
              )
     
@@ -175,10 +180,11 @@ while True:
     
     # Person out
     ids_now = [i[0] for i in IDs]
-    for _id, _name in pre_ids:
-        if _id not in ids_now:
-            log.update_a([_name,"-", str(datetime.datetime.now()), "Out"])
-    pre_ids = [(i[0], i[1]) for i in IDs]        
+    if LOG_MODE==0:
+        for _id, _name in pre_ids:
+            if _id not in ids_now:
+                log.update_a([_name,"-", str(datetime.datetime.now()), "Out"])
+        pre_ids = [(i[0], i[1]) for i in IDs]        
 
     ids_temp = []
     for _ids in IDs: 

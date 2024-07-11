@@ -1,7 +1,7 @@
 import pandas as pd
 import datetime
 import requests, os, glob, time
-from config import HOST, PORT, LOG_DIR
+from config import HOST, PORT, LOG_DIR, LOG_MODE
 
 def getLastTime(): 
     # contents = image.file.read()
@@ -37,7 +37,10 @@ def syncLog(last_time):
             data = ""
             for frame in df[index:]:
                 frame1 =  (" "+str(frame[1])) if type(frame[1]) == float else frame[1]
-                data+=f"{frame[0]},{frame1},{frame[2]},{frame[3]}\n"
+                if LOG_MODE == 0:
+                    data+=f"{frame[0]},{frame1},{frame[2]},{frame[3]}\n"
+                else:
+                    data+=f"{frame[0]},{frame1},{frame[2]}\n"
             
             resp = requests.post(f'http://{HOST}:{PORT}/log_sync', json={"sync_data":data})
             if resp.status_code == 200:

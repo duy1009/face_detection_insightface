@@ -1,12 +1,11 @@
 import cv2, glob, os, time, tqdm, shutil
-import numpy as np
 from arcface import ArcFaceONNX
 from logger import LogCSV
 
-DB = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db"
+DB = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/db_align"
 MODEL_PATH = "/home/hungdv/tcgroup/Jetson/insightface/arc_R50.onnx"
-IMG_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc/images"
-LOG_RESULT_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/face_images/duc"
+IMG_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/result_ang_duy/images"
+LOG_RESULT_DIR = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/result_ang_duy"
 
 handler = ArcFaceONNX(MODEL_PATH)
 handler.prepare(ctx_id=0)

@@ -7,9 +7,9 @@ from tracker import CentroidTracker
 from _process import count_angle, alignface
 from logger import LogCSV
 
-SAVE_DIR = "result_cong" 
+SAVE_DIR = "result_ang_duy" 
 MODEL_PATH = "src/weights/det_10g.onnx"
-SRC = "/home/hungdv/Downloads/video_test/Duy.avi"
+SRC = r"/home/hungdv/Downloads/Telegram Desktop/aaaaa.mp4"
 INPUT_SIZE = (640, 640)
 
 def filter(pred, conf = 0.5, angle=180):
