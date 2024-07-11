@@ -174,7 +174,8 @@ while True:
         # Check new person
         if track_res["id"] not in ids + processing_ids:
             imgs_f, imgs_size = alignCrop(rimg, [track_res])
-            if (imgs_size[0][0] + imgs_size[0][1])/2 > IMG_SIZE_REQUEST_MIN:
+            _angle = count_angle(track_res["kps"])
+            if (imgs_size[0][0] + imgs_size[0][1])/2 > IMG_SIZE_REQUEST_MIN and ANGLE_REQUEST_MIN > abs(_angle):
                 print("[Request]: new person")
                 sendRequest(imgs_f[0], track_res["id"])
         track_ids.append(track_res["id"])
