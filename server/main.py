@@ -21,30 +21,52 @@ handler = ArcFaceONNX(MODEL_PATH)
 handler.prepare(ctx_id=0)
 
 
-# Load faces feature from database
-db_img_path = glob.glob(os.path.join(DB, "**.png")) + glob.glob(os.path.join(DB, "**.jpg"))
-feat_db = {}
 
-for img_path in db_img_path:
+# Load faces feature from database
+# db_img_path = glob.glob(os.path.join(DB, "**.png")) + glob.glob(os.path.join(DB, "**.jpg"))
+# feat_db = {}
+# for img_path in db_img_path:
+#     pil_image = Image.open(img_path).convert('RGB')
+#     open_cv_image = np.array(pil_image)
+#     # Convert RGB to BGR
+#     im = open_cv_image[:, :, ::-1].copy()
+#     name = os.path.basename(img_path)[:-4]
+#     feat_db[name] = handler.get2(im)
+# ***************************************
+import faiss
+feat_db_faiss = faiss.IndexFlatIP(512)
+db_img_path = glob.glob(os.path.join(DB, "**.png")) + glob.glob(os.path.join(DB, "**.jpg"))
+feats_name = []
+feat_db = []
+for id, img_path in enumerate(db_img_path):
     pil_image = Image.open(img_path).convert('RGB')
     open_cv_image = np.array(pil_image)
     # Convert RGB to BGR
     im = open_cv_image[:, :, ::-1].copy()
     name = os.path.basename(img_path)[:-4]
-    feat_db[name] = handler.get2(im)
+    feats_name.append(name)
+    feat = handler.get2(im)
+    feat_db.append(feat)
+data = np.array(feat_db)
+faiss.normalize_L2(data)
+feat_db_faiss.add(data)
 
 def getSimilarFace(img):
     open_cv_image = np.array(img)
-    # Convert RGB to BGR
     img = open_cv_image[:, :, ::-1].copy()
-    feat2 = handler.get2(img)
-    score_max = -2
-    feat_same = []
-    for feat_name, feat in feat_db.items():
-        score = handler.compute_sim(feat, feat2)
-        if score > score_max:
-            feat_same = [feat_name, score]
-            score_max = score
+    feat2 = np.expand_dims(handler.get2(img),0)
+    faiss.normalize_L2(feat2)
+    f_dists, f_ids = feat_db_faiss.search(feat2, k=1)
+    # search
+    # score_max = -2
+    # feat_same = []
+    # for feat_name, feat in feat_db.items():
+    #     score = handler.compute_sim(feat, feat2)
+    #     if score > score_max:
+    #         feat_same = [feat_name, score]
+    #         score_max = score
+    # **************************************************
+    feat_same = [feats_name[int(f_ids[0][0])], f_dists[0][0]]
     if feat_same[1] < 0.3:
         feat_same[0] = "stranger"
     feat_same[1] = (1+feat_same[1])/2
