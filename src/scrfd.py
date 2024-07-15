@@ -68,7 +68,9 @@ class SCRFD_INFERENCE:
         self.model_path = model_path
         self.taskname = 'detection'
         self.batched = False
-        self.session = onnxruntime.InferenceSession(self.model_path, None)
+        so = onnxruntime.SessionOptions()
+        so.log_severity_level = 0
+        self.session = onnxruntime.InferenceSession(self.model_path, so)
         self.center_cache = {}
         self.nms_thresh = 0.4
         self.det_thresh = 0.5
