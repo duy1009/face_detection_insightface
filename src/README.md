@@ -24,5 +24,5 @@ Output: result.csv, folders image
 7. test2.py: test detection model (don't save any results)
 8. main.py: detect face -> tracking -> using face recognition API -> log time "In" and time "Out"
 
-### Export tensorrt
-```trtexec --onnx=resnet50/model.onnx --saveEngine=resnet_engine.trt```
+### Export tensorrt on Jetson Nano
+```/usr/src/tensorrt/bin/trtexec --onnx=resnet50/model.onnx --saveEngine=resnet_engine.trt```
