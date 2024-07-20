@@ -18,8 +18,8 @@ def load_engine(engine_file_path):
     
 def infer(engine):
     input_image = np.random.random((1, 3, 640, 640))
-    image_width = input_image.width
-    image_height = input_image.height
+    image_width = input_image.shape[3]
+    image_height = input_image.shape[2]
 
     with engine.create_execution_context() as context:
         # Set input shape based on image dimensions for inference
