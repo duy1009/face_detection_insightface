@@ -26,11 +26,14 @@ def infer(engine):
         context.set_binding_shape(engine.get_binding_index("input"), (1, 3, image_height, image_width))
         # Allocate host and device buffers
         bindings = []
+        print("[Engine]")
+        print(len(engine))
         for binding in engine:
+            print(binding)
             binding_idx = engine.get_binding_index(binding)
             size = trt.volume(context.get_binding_shape(binding_idx))
             dtype = trt.nptype(engine.get_binding_dtype(binding))
-            print(size, dtype)
+            print(binding_idx, size, dtype)
             if engine.binding_is_input(binding):
                 input_buffer = np.ascontiguousarray(input_image)
                 input_memory = cuda.mem_alloc(input_image.nbytes)
