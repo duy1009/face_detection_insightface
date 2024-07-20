@@ -34,10 +34,12 @@ def infer(engine):
             if engine.binding_is_input(binding):
                 input_buffer = np.ascontiguousarray(input_image)
                 input_memory = cuda.mem_alloc(input_image.nbytes)
-                print(input_memory.nbytes)
-                print(input_memory.dtype)
+                print("[Input]")
+                print(input_image.nbytes)
+                print(input_image.dtype)
                 bindings.append(int(input_memory))
             else:
+                print("[Output]")
                 output_buffer = cuda.pagelocked_empty(size, dtype)
                 print(output_buffer.nbytes)
                 print(output_buffer.dtype)
