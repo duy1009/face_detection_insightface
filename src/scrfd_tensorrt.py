@@ -36,6 +36,8 @@ def infer(engine):
                 bindings.append(int(input_memory))
             else:
                 output_buffer = cuda.pagelocked_empty(size, dtype)
+                print(dtype, output_buffer.nbytes)
+                print(output_buffer.dtype)
                 output_memory = cuda.mem_alloc(output_buffer.nbytes)
                 bindings.append(int(output_memory))
 
