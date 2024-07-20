@@ -17,7 +17,7 @@ def load_engine(engine_file_path):
         return runtime.deserialize_cuda_engine(f.read())
     
 def infer(engine):
-    input_image = np.random.random((1, 3, 640, 640))
+    input_image = np.random.random((1, 3, 640, 640)).astype("float32")
     image_width = input_image.shape[3]
     image_height = input_image.shape[2]
 
