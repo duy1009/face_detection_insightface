@@ -7,7 +7,7 @@ import numpy as np
 TRT_LOGGER = trt.Logger()
 
 # Filenames of TensorRT plan file and input/output images.
-engine_file = "/home/hungdv/tcgroup/Jetson/insightface/face_detection_insightface/src/weights/det_10g.engine"
+engine_file = "weights/det_10g.engine"
 
 
 def load_engine(engine_file_path):
