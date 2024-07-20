@@ -30,13 +30,16 @@ def infer(engine):
             binding_idx = engine.get_binding_index(binding)
             size = trt.volume(context.get_binding_shape(binding_idx))
             dtype = trt.nptype(engine.get_binding_dtype(binding))
+            print(size, dtype)
             if engine.binding_is_input(binding):
                 input_buffer = np.ascontiguousarray(input_image)
                 input_memory = cuda.mem_alloc(input_image.nbytes)
+                print(input_memory.nbytes)
+                print(input_memory.dtype)
                 bindings.append(int(input_memory))
             else:
                 output_buffer = cuda.pagelocked_empty(size, dtype)
-                print(dtype, output_buffer.nbytes)
+                print(output_buffer.nbytes)
                 print(output_buffer.dtype)
                 output_memory = cuda.mem_alloc(output_buffer.nbytes)
                 bindings.append(int(output_memory))
